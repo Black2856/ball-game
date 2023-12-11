@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ball game</title>
+<style>
+body {
+    margin: 0;
+    height: 100vh;
+    background-color: #f0f0f0;
+}
+
+.game-contents {
+    display: flex;
+    justify-content: center;
+    margin-top: 50px;
+}
+
+#canvas-container {
+    width: 350px;
+    height: 500px;
+    position: relative;
+    border-left: 1px solid black;
+    border-bottom: 1px solid black;
+    border-right: 1px solid black;
+    transition: filter 1s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.message {
+    position: absolute;
+    text-align: center;
+    top: 50%;
+    left: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 350px;
+    height: 100px;
+    font-weight: 1000;
+    -webkit-text-stroke: 1px #000;
+    font-size: 35px;
+    transform: translate(-50%, -50%) scale(0);
+    color: white;
+    transition: transform 1s cubic-bezier(0.34, 1.56, 0.64, 1),
+        top 1s cubic-bezier(0.16, 1, 0.3, 1);
+}
+/* canvas-container */
+
+
+.score-display {
+    background-color:rgb(255, 255, 255);
+    border: 1px solid black;
+    border-radius: 50%;
+    margin-top: 175px;
+    width: 150px;
+    height: 150px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    margin-right: 15px;
+}
+
+.score-display > .title {
+    font-size: 18px;
+    margin: 0;
+}
+
+.score-display > .value {
+    font-size: 32px;
+    margin: 0;
+    transform: scale(1);
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nextBall-display {
+    background-color:rgb(255, 255, 255);
+    border: 1.2px solid black;
+    border-radius: 50%;
+    margin-top: 175px;
+    width: 150px;
+    height: 150px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    margin-left: 15px;
+}
+
+.nextBall-display > .title {
+    font-size: 18px;
+    margin: 0;
+}
+
+.nextBall-display > .value {
+    width: 75px;
+    height: 75px;
+}
+
+#end {
+    position:absolute;
+    align-items: center;
+    top: 0px;
+    width: 350px;
+    height: 150px;
+    border: 1px aqua;
+    transform: scale(0);
+    opacity: 0;
+    transition: opacity 1s cubic-bezier(0.16, 1, 0.3, 1),
+        top 1s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#name-label {
+    font-size: 25px;
+    font-weight: 1000;
+    -webkit-text-stroke: 1px #000;
+    color:white;
+    margin-left: 15px;
+}
+
+#name-input {
+    position:absolute;
+    top: 40px;
+    left: 15px;
+    width: 72%;
+    height: 20px;
+    font-size: 17px;
+}
+
+#retmsg {
+    position:absolute;
+    font-size: 15px;
+    color:white;
+    background-color: black;
+    top: 60px;
+    left: 15px;
+}
+
+#button1 {
+    position:absolute;
+    top: 38px;
+    right: 15px;
+    width: 50px;
+    height: 30px;
+}
+
+#button2 {
+    position:absolute;
+    bottom: 5px;
+    right: 15px;
+    width: 80px;
+    height: 40px;
+}
+</style>
+</head>
+<body>
+<h1 class="game-contents">
+    <div class="score-display">
+        <p class="title">SCORE</p>
+        <p class="value" id="score">0</p>
+    </div>
+
+    <div id="canvas-container">
+        <div id="end">
+            <label id="name-label">スコアを登録する</label>
+            <input id="name-input" type="text" maxlength="16">
+            <p id="retmsg"></p>
+            
+            <button id="button1" onclick="registerScore()">登録</button>
+            <button id="button2" onclick="retryGame()">再挑戦</button>
+        </div>
+    </div>
+
+    <div class="nextBall-display">
+        <p class="title">NEXT</p>
+        <canvas class="value", id="nextBallRender" width="75" height="75"></canvas>
+    </div>
+</h1>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.18.0/matter.min.js"></script>
+<script>
+class ScoreManager {
+    constructor(element) {
+        this.score = 0;
+        this.maxScore = 99999;
+        this.log = "";
+        this.element = element; //document.getElementById("id")
+        this.element.innerText = String(this.score);
+    }
+
+    add(points, log) {
+        this.score += points;
+        this.log += log;
+        if (this.score > this.maxScore) {
+            this.score = this.maxScore;
+        }
+        this.displayUpdate();
+    }
+
+    getScore() {
+        return this.score;
+    }
+
+    getLog() {
+        return this.log
+    }
+
+    displayUpdate() {
+        this.element.innerText = String(this.score);
+        this.animateScore();
+    }
+
+    reset() {
+        this.score = 0;
+        this.log = "";
+        this.displayUpdate();
+    }
+
+    animateScore() {
+        this.element.style.transition = 'transform 0.05s cubic-bezier(0.16, 1, 0.3, 1)';
+        this.element.style.transform = 'scale(1.5)';
+        setTimeout(() => {
+            this.element.style.transition = 'transform 0.25s cubic-bezier(0.16, 1, 0.3, 1)';
+            this.element.style.transform = 'scale(1)';
+        }, 50);
+    }
+}
+
+class NextManager {
+    constructor() {
+        this.list = [];
+        this.generateNext();
+        this.generateNext();
+    }
+
+    generateNext() {
+        this.list.push(Math.floor(Math.random() * 5) + 1);
+        if (this.list.length > 2) {
+            this.list.shift();
+        }
+    }
+
+    getList(idx) {
+        return this.list[idx];
+    }
+}
+
+class NextDisplay {
+    constructor(element, ballsProperties) {
+        this.element = element; //document.getElementById("id");
+        this.id = 0;
+        this.ballsProperties = ballsProperties;
+    }
+
+    setBall(id) {
+        this.id = id;
+        this.updateDisplay();
+    }
+
+    updateDisplay() {
+        const ballsPropertie = this.ballsProperties[this.id - 1];
+        var ctx = this.element.getContext("2d");
+        ctx.beginPath();
+        ctx.clearRect(0, 0, this.element.width, this.element.height);
+        ctx.arc(75 / 2, 75 / 2, ballsPropertie.radius, 0, 2 * Math.PI);
+        ctx.fillStyle = ballsPropertie.color;
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.fill();
+        ctx.stroke();
+    }  
+}
+
+// Settings
+const fixedDeltaTime = 1000 / 120;
+const lineheight = 50;
+const generateHeight = 25;
+const wallSize = 10;
+const api = 'https://script.google.com/macros/s/AKfycbz4y6Qnmt8upxSn0l7VekqNx4nnJARgEfQAb3fESai9pcdHKte4uYev3z1HlrYfnqA/exec';
+let pause = false;
+
+// Balls properties
+const ballsProperties = [
+    {'radius': 15, 'color': '#ED0E11', 'score': 0, 'id': 'z'}, 
+    {'radius': 20, 'color': '#F67850', 'score': 1, 'id': 'f'}, 
+    {'radius': 25, 'color': '#8445EE', 'score': 3, 'id': 'e'}, 
+    {'radius': 30, 'color': '#F4AE0E', 'score': 6, 'id': 'd'}, 
+    {'radius': 35, 'color': '#F48010', 'score': 10, 'id': 'h'}, 
+    {'radius': 40, 'color': '#D30708', 'score': 15, 'id': 'y'}, 
+    {'radius': 50, 'color': '#FCF674', 'score': 21, 'id': 'n'}, 
+    {'radius': 60, 'color': '#FAB7AD', 'score': 28, 'id': 'c'}, 
+    {'radius': 70, 'color': '#E1D100', 'score': 36, 'id': 'x'}, 
+    {'radius': 80, 'color': '#83CD0C', 'score': 45, 'id': 's'}, 
+    {'radius': 100, 'color': '#047000', 'score': 55, 'id': 'a'},
+    {'radius': 0, 'color': '#FFFFFF', 'score': 66, 'id': 'v'}
+];
+
+// Basic setup for Matter.js
+let Engine = Matter.Engine,
+    Render = Matter.Render,
+    World = Matter.World,
+    Composite = Matter.Composite,
+    Bodies = Matter.Bodies,
+    Events = Matter.Events,
+    Runner = Matter.Runner;
+// Create an engine
+let engine = Engine.create();
+engine.timing.timeScale = 0.5
+
+let accumulator = 0;
+function gameLoop(time) {
+    requestAnimationFrame(gameLoop);
+
+    // 経過時間の追加（ミリ秒）
+    accumulator += time - engine.timing.lastTime;
+
+    // エンジンの更新 (固定タイムステップ)
+    while (accumulator >= fixedDeltaTime) {
+        Engine.update(engine, fixedDeltaTime);
+        accumulator -= fixedDeltaTime;
+    }
+
+    engine.timing.lastTime = time;
+}
+requestAnimationFrame(gameLoop);
+
+// Create a Composite
+let composite = Composite.create();
+// Create a runner
+let runner = Runner.create();
+// Create a main renderer
+let render = Render.create({
+    element: document.getElementById('canvas-container'),
+    engine: engine,
+    options: {
+        width: 350,
+        height: 500,
+        wireframes: false
+    }
+});
+
+// Function to create a ball
+function createBall(x, y, sizeIndex) {
+    let ballProp = ballsProperties[sizeIndex - 1];
+    return Bodies.circle(x, y, ballProp.radius, { 
+        render: { fillStyle: ballProp.color },
+        restitution: 0,
+        label: 'ball',
+        ballSize: sizeIndex,
+        score: ballProp.score,
+        collisioned: false
+    });
+}
+
+function createNextBall(sizeIndex) {
+    let ballProp = ballsProperties[sizeIndex - 1];
+    return Bodies.circle(ballProp.radius / 2, ballProp.radius / 2, ballProp.radius, { 
+        render: { fillStyle: ballProp.color },
+        label: 'nextBall',
+        collisionFilter: {
+            group: -1,
+            category: 0,
+            mask: 0
+        }
+    });
+}
+
+let scoreManager = new ScoreManager(document.getElementById("score"));
+let nextDisplay = new NextDisplay(document.getElementById("nextBallRender"), ballsProperties);
+let nextManager = new NextManager();
+nextDisplay.setBall(nextManager.getList(1));
+let previewBall = null;
+
+function gameInit() {
+    const allBodies = Composite.allBodies(engine.world);
+    // 全ての物体を削除
+    for (const body of allBodies) {
+        World.remove(engine.world, body);
+    }
+
+    // Add walls (except for the top wall)
+    let ground = Bodies.rectangle(175, 500, 350, 20, {
+        label: 'ground',
+        isStatic: true,
+        render: {
+            fillStyle: '#FFFFFF'
+        },
+        restitution: 0
+    });
+    let leftWall = Bodies.rectangle(0, 250, 20, 500, {
+        label: 'wall',
+        isStatic: true,
+        render: {
+            fillStyle: '#FFFFFF'
+        },
+        restitution: 0
+    });
+    let rightWall = Bodies.rectangle(350, 250, 20, 500, {
+        label: 'wall',
+        isStatic: true,
+        render: {
+            fillStyle: '#FFFFFF'
+        },
+        restitution: 0
+    });
+    // Create a thin white line
+    let whiteLine = Bodies.rectangle(175, lineheight, 350, 1, {
+        label: 'whiteLine',
+        isSensor: true,
+        isStatic: true,
+        render: {
+            fillStyle: '#FFFFFF'
+        }
+    });
+
+    World.add(engine.world, [ground, leftWall, rightWall, whiteLine]);
+
+    scoreManager = new ScoreManager(document.getElementById("score"));
+    nextDisplay = new NextDisplay(document.getElementById("nextBallRender"), ballsProperties);
+    nextManager = new NextManager();
+    nextDisplay.setBall(nextManager.getList(1));
+    previewBall = null;
+}
+
+//ユーザ名の文字数が0の場合、登録ボタンを押せないようにする。
+document.addEventListener('DOMContentLoaded', function() {
+    var textInput = document.getElementById('name-input');
+    var registerButton = document.getElementById('button1');
+
+    textInput.addEventListener('input', function() {
+        // テキスト入力が0文字の場合、ボタンを無効化
+        registerButton.disabled = textInput.value.length === 0;
+    });
+
+    // 初期状態でボタンを無効化する場合（オプション）
+    registerButton.disabled = true;
+});
+
+// イベントリスナーを追加する関数
+function enableEvents() {
+    document.getElementById('canvas-container').addEventListener('mousemove', handleMouseMove);
+    document.getElementById('canvas-container').addEventListener('mousedown', handleMouseDown);
+    document.getElementById('canvas-container').addEventListener('mouseout', handleMouseOut);
+}
+
+// イベントリスナーを削除する関数
+function disableEvents() {
+    document.getElementById('canvas-container').removeEventListener('mousemove', handleMouseMove);
+    document.getElementById('canvas-container').removeEventListener('mousedown', handleMouseDown);
+    document.getElementById('canvas-container').removeEventListener('mouseout', handleMouseOut);
+}
+
+function handleMouseMove(event) {
+    if (!previewBall) {
+        previewBall = createBall(event.offsetX, generateHeight, nextManager.getList(0));
+        previewBall.isStatic = true; // Make the ball static
+        previewBall.render.opacity = 0.5; // Make the ball semi-transparent
+        previewBall.collisionFilter = { group: -1, category: 0, mask: 0 }; // Disable collision
+        World.add(engine.world, previewBall);
+    }
+        let clampedX = wallClipRange()
+        Matter.Body.setPosition(previewBall, { x: clampedX, y: generateHeight });
+};
+
+let canClick = true; // Variable to track if clicking is allowed
+function handleMouseDown(event) {
+    if (previewBall && canClick) {
+        canClick = false; // Disable further clicks
+        World.remove(engine.world, previewBall);
+        nextManager.generateNext();
+        nextDisplay.setBall(nextManager.getList(1));
+        let clampedX = wallClipRange()
+        let newBall = createBall(clampedX, generateHeight, previewBall.ballSize);
+        World.add(engine.world, newBall);
+        previewBall = null; // Reset the preview ball
+        setTimeout(function() {
+            canClick = true; // Re-enable clicking after 0.5 seconds
+        }, 500);
+    }
+};
+
+function handleMouseOut(event) {
+    if (previewBall) {
+        World.remove(engine.world, previewBall);
+        previewBall = null;
+    }
+};
+
+// Collision event
+Events.on(engine, 'collisionStart', function(event) {
+    let pairs = event.pairs;
+    pairs.forEach(function(pair) {
+        let bodyA = pair.bodyA,
+            bodyB = pair.bodyB;
+
+        if (bodyA.label === 'ball' && bodyB.label === 'ball' && bodyA.ballSize === bodyB.ballSize) {
+            // Check if it's not the maximum size
+            if (bodyA.ballSize < 11) {
+                gameOver();
+                let newSize = bodyA.ballSize + 1;
+                let newX = (bodyA.position.x + bodyB.position.x) / 2;
+                let newY = (bodyA.position.y + bodyB.position.y) / 2;
+                let newBall = createBall(newX, newY, newSize);
+                World.remove(engine.world, [bodyA, bodyB]);
+                World.add(engine.world, newBall);
+                scoreManager.add(newBall.score, newBall.id);
+            } else {
+                // Remove both balls if they are of maximum size
+                World.remove(engine.world, [bodyA, bodyB]);
+                scoreManager.add(ballsProperties[ballsProperties.length - 1].score, ballsProperties[ballsProperties.length - 1].id);
+            }
+        } else if (pair.bodyA.label != 'whiteLine' && pair.bodyA.label != 'wall' && pair.bodyB.collisioned == false) {
+            bodyB.collisioned = true;
+        }
+    });
+});
+
+Events.on(engine, 'collisionActive', event => {
+    var pairs = event.pairs;
+    for (var i = 0; i < pairs.length; i++) {
+        var pair = pairs[i];
+
+        // ボールが感知領域に入ったかどうかをチェック
+        if ((pair.bodyA.label === 'whiteLine' && pair.bodyB.collisioned === true) ||
+            (pair.bodyA.collisioned === true && pair.bodyB.label === 'whiteLine')) {
+            gameOver();
+        }
+    }
+});
+
+function wallClipRange() {
+    let maxClip = 350 - (previewBall.circleRadius + wallSize);
+    let minClip = (previewBall.circleRadius + wallSize);
+    let clampedX = Math.min(Math.max(event.offsetX, minClip), maxClip);
+    return clampedX
+}
+
+function gamePause(bool) {
+    pause = bool;
+    if (pause === true) {
+        Runner.stop(runner);
+        Render.stop(render);
+        disableEvents();
+
+    } else {
+        Runner.run(runner, engine);
+        Render.run(render);
+        enableEvents();
+    }
+}
+
+function gameOver() {
+    gameOverMessage('canvas-container');
+    gamePause(true);
+}
+
+function gameOverMessage(containerId, message) {
+    const container = document.getElementById(containerId);
+    const menu = document.getElementById('end');
+
+    //ゲームオーバ + スコアの追加
+    const messageElem = document.createElement("div");
+    messageElem.classList.add("message");
+    messageElem.innerText = 'GAME OVER\n' + scoreManager.getScore();
+    container.appendChild(messageElem);
+
+    // アニメーション開始
+    setTimeout(() => {
+        messageElem.style.transform = 'translate(-50%, -50%) scale(1)';
+        container.style.filter = 'sepia(0.9)';
+    }, 100);
+
+    setTimeout(() => {
+        messageElem.style.top = '30%';
+        menu.style.transform = 'scale(1)';
+        menu.style.opacity = '1';
+        menu.style.top = '50%';
+    }, 1500);
+}
+
+// スコア登録
+function registerScore() {
+    const data = {
+        type: "3",
+        name: document.getElementById("name-input"),
+        test: sha256(scoreManager.getScore()),
+        data: scoreManager.getLog()
+    }
+
+    const returnElem = document.getElementById('retmsg');
+    const registerButton = document.getElementById('button1');
+
+    registerButton.disabled = true;
+
+    const result = postJson(api, data);
+    let msg = "failed";
+    if (result === true) {
+        msg = "success"
+    } else {
+        setTimeout(() => {
+            registerButton.disabled = false;
+        }, 5000);
+    }
+    returnElem.innerText = msg;
+}
+
+function retryGame() {
+    window.location.reload();
+}
+
+async function postJson(url, data) {
+  try {
+    const response = await fetch(url, {
+      method: 'POST', // POSTメソッドを指定
+      headers: {
+        'Content-Type': 'application/json' // コンテンツタイプをJSONに設定
+      },
+      body: JSON.stringify(data) // 送信するデータをJSON形式に変換
+    });
+
+    // レスポンスが正常かチェック
+    if (!response.ok) {
+      throw new Error(`Error: ${response.status}`);
+    }
+    
+    // レスポンスをJSONとして解析し、返す
+    return await response.json();
+  } catch (error) {
+    console.error('Error in postJson:', error);
+    return false; // エラーが発生した場合はfalseを返す
+  }
+}
+
+async function sha256(message) {
+    // 文字列をエンコードしてUint8Arrayに変換
+    const msgBuffer = new TextEncoder().encode(message); 
+
+    // ハッシュを計算
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+
+    // ハッシュを16進数文字列に変換
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+    return hashHex;
+}
+
+gameInit();
+gamePause(false);
+
+</script>
+</body>
+</html>
