@@ -126,8 +126,23 @@ let engine = Engine.create();
 engine.timing.timeScale = 1
 
 let accumulator = 0;
+let lastTime = 0;
+
+function update(time) {
+    // 経過時間の計算（ミリ秒）
+    const deltaTime = time - lastTime;
+    lastTime = time;
+    console.log("a");
+    // エンジンの更新
+    Engine.update(engine, deltaTime);
+
+    // 次のフレームのリクエスト
+    requestAnimationFrame(update);
+}
+
+/*
 function updateEngine(timeScale) {
-    const fixedDeltaTime = 1000 / 120; // 60 FPSに固定
+    const fixedDeltaTime = 1000 / 360; // 60 FPSに固定
     console.log("a");
     Engine.update(engine, fixedDeltaTime, timeScale);
 }
@@ -135,7 +150,7 @@ function updateEngine(timeScale) {
 Runner.tick = function(time, deltaTime) {
     updateEngine(1); // 時間スケーリングを適用（ここでは1に固定）
 };
-
+*/
 // Create a Composite
 let composite = Composite.create();
 // Create a runner
@@ -356,6 +371,8 @@ function gamePause(bool) {
         disableEvents();
 
     } else {
+        lastTime = performance.now();
+        requestAnimationFrame(update);
         Runner.run(runner, engine);
         Render.run(render);
         enableEvents();
