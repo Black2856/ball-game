@@ -140,17 +140,17 @@ function update(time) {
     requestAnimationFrame(update);
 }
 
-/*
+
 function updateEngine(timeScale) {
     const fixedDeltaTime = 1000 / 360; // 60 FPSに固定
-    console.log("a");
-    Engine.update(engine, fixedDeltaTime, timeScale);
+    //console.log("a");
+    //Engine.update(engine, fixedDeltaTime, timeScale);
 }
 
 Runner.tick = function(time, deltaTime) {
     updateEngine(1); // 時間スケーリングを適用（ここでは1に固定）
 };
-*/
+
 // Create a Composite
 let composite = Composite.create();
 // Create a runner
