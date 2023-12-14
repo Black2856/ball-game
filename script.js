@@ -90,7 +90,6 @@ class NextDisplay {
 }
 
 // Settings
-const fixedDeltaTime = 1000 / 60;
 const maxScoreboard = 100
 const lineheight = 50;
 const generateHeight = 25;
@@ -124,24 +123,18 @@ let Engine = Matter.Engine,
     Runner = Matter.Runner;
 // Create an engine
 let engine = Engine.create();
-engine.timing.timeScale = 0.5
+engine.timing.timeScale = 1
 
 let accumulator = 0;
-function gameLoop(time) {
-    requestAnimationFrame(gameLoop);
-
-    // 経過時間の追加（ミリ秒）
-    accumulator += time - engine.timing.lastTime;
-    console.log("test");
-    // エンジンの更新 (固定タイムステップ)
-    while (accumulator >= fixedDeltaTime) {
-        Engine.update(engine, fixedDeltaTime);
-        accumulator -= fixedDeltaTime;
-    }
-
-    engine.timing.lastTime = time;
+function updateEngine(timeScale) {
+    const fixedDeltaTime = 1000 / 120; // 60 FPSに固定
+    console.log("a");
+    Engine.update(engine, fixedDeltaTime, timeScale);
 }
-requestAnimationFrame(gameLoop);
+
+Runner.tick = function(time, deltaTime) {
+    updateEngine(1); // 時間スケーリングを適用（ここでは1に固定）
+};
 
 // Create a Composite
 let composite = Composite.create();
@@ -157,6 +150,7 @@ let render = Render.create({
         wireframes: false
     }
 });
+
 
 // Function to create a ball
 function createBall(x, y, sizeIndex) {
@@ -517,4 +511,5 @@ async function sha256(message) {
 
 gameInit();
 gamePause(false);
+
 createRankingTable('scoreboard');
