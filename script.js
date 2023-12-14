@@ -125,14 +125,12 @@ let Engine = Matter.Engine,
 let engine = Engine.create();
 engine.timing.timeScale = 1
 
-let accumulator = 0;
 let lastTime = 0;
-
 function update(time) {
     // 経過時間の計算（ミリ秒）
     const deltaTime = time - lastTime;
     lastTime = time;
-    console.log("a");
+    console.log(deltaTime);
     // エンジンの更新
     Engine.update(engine, deltaTime);
 
